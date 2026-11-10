@@ -32,7 +32,7 @@ class LocalFolderExtractor {
         File f = new File(folderDestination, fileName);
         try {
             String fileCanonPath = f.getCanonicalPath();
-            if (!fileCanonPath.startsWith(folderDestination.getCanonicalPath())) {
+            if (!fileCanonPath.startsWith(canonicalPathWithTrailingSeparator(folderDestination))) {
                 String errorMessage = "Rar contains invalid path: '" + fileCanonPath + "'";
                 throw new IllegalStateException(errorMessage);
             }
@@ -58,7 +58,7 @@ class LocalFolderExtractor {
         String name = invariantSeparatorsPathString(fh.getFileName());
         File f = new File(destination, name);
         String dirCanonPath = f.getCanonicalPath();
-        if (!dirCanonPath.startsWith(destination.getCanonicalPath())) {
+        if (!dirCanonPath.startsWith(canonicalPathWithTrailingSeparator(destination))) {
             String errorMessage = "Rar contains file with invalid path: '" + dirCanonPath + "'";
             throw new IllegalStateException(errorMessage);
         }
@@ -95,5 +95,19 @@ class LocalFolderExtractor {
 
     static String invariantSeparatorsPathString(String path) {
         return path.replace("\\", "/");
+    }
+
+    /**
+     * Returns the canonical path of the given directory terminated by {@link File#separator}, so that a
+     * prefix check only matches entries located inside that directory and not in a sibling directory
+     * sharing the same name prefix (e.g. "/tmp/extract_evil" vs "/tmp/extract").
+     * Filesystem roots ("/", "C:\") already end with a separator and are returned unchanged.
+     */
+    static String canonicalPathWithTrailingSeparator(final File directory) throws IOException {
+        final String canonicalPath = directory.getCanonicalPath();
+        if (canonicalPath.endsWith(File.separator)) {
+            return canonicalPath;
+        }
+        return canonicalPath + File.separator;
     }
 }
